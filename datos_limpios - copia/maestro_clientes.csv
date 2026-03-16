@@ -1,0 +1,19 @@
+cliente_id,cliente,canal,regional,zona,ciudad,formato_cliente
+C001,HiperMax Nacional,Grandes Superficies,Centro,Bogotá y Sabana,Bogotá,Hipermercado
+C002,SuperAhorro,Grandes Superficies,Antioquia,Valle de Aburrá,Medellín,Supermercado
+C003,MaxiCompra Caribe,Grandes Superficies,Caribe,Costa Norte,Barranquilla,Supermercado
+C004,Descuento Ya,Hard Discount,Centro,Bogotá y Sabana,Bogotá,Discounter
+C005,PrecioListo,Hard Discount,Antioquia,Valle de Aburrá,Medellín,Discounter
+C006,PuntoMenos Caribe,Hard Discount,Caribe,Costa Norte,Cartagena,Discounter
+C007,Food Service Capital,Institucional,Centro,Bogotá y Sabana,Bogotá,Food Service
+C008,Horeca Antioquia,Institucional,Antioquia,Valle de Aburrá,Medellín,Food Service
+C009,Sabor Escolar,Institucional,Occidente,Valle del Cauca,Cali,Institucional
+C010,Andes Export LLC,Exportaciones,Internacional,Norteamérica,Miami,Distribuidor Internacional
+C011,Caribe Export Partners,Exportaciones,Internacional,Centroamérica,Ciudad de Panamá,Distribuidor Internacional
+C012,Delimarket Gourmet,Tiendas Especializadas,Centro,Bogotá y Sabana,Bogotá,Especialidad
+C013,La Mesa Premium,Tiendas Especializadas,Occidente,Valle del Cauca,Cali,Especialidad
+C014,Plaza Hogar,Grandes Superficies,Occidente,Valle del Cauca,Cali,Hipermercado
+C015,Abarrotes Norte,Tradicional Modernizado,Caribe,Costa Norte,Barranquilla,Supermercado Regional
+C016,Canasta Familiar,Grandes Superficies,Santanderes,Bucaramanga Metropolitana,Bucaramanga,Supermercado
+C017,RapiExpress,E-commerce,Centro,Bogotá y Sabana,Bogotá,Quick Commerce
+C018,Cadena Uno,Hard Discount,Occidente,Valle del Cauca,Cali,Discounter
