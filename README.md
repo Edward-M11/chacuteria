@@ -30,4 +30,4 @@ pip install -r requirements.txt
 
 ### Ejecutar EDA y Consolidar Datos
 
-Abre Jupyter o ejecuta el notebook usando VS Code para leer los archivos locales (`paquete_candidato_chacuteria_foods/`) y generar el archivo `consolidado.parquet`.
+Abre Jupyter o ejecuta el notebook usando VS Code para leer los archivos locales (`paquete_candidato_chacuteria_foods/`) y generar los archivos necesarios para el dashboard
