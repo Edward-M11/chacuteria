@@ -6,6 +6,11 @@ import os
 import numpy as np
 from datetime import timedelta
 from sklearn.linear_model import LinearRegression
+import asyncio
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 # Configuración inicial de la página
 st.set_page_config(page_title="Chacutería - Dashboard", page_icon="🧀", layout="wide")
 
