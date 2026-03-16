@@ -82,7 +82,7 @@ st.markdown("""
 # ==========================================
 @st.cache_data
 def load_data():
-    base_path = 'datos_limpios'
+    base_path = 'datos_limpios - copia'
     if not os.path.exists(f'{base_path}/consolidado_sell_in.csv'):
         return None, None, None, None, None, None
 
