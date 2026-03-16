@@ -6,7 +6,6 @@ import os
 import numpy as np
 from datetime import timedelta
 from sklearn.linear_model import LinearRegression
-from supabase import create_client
 # Configuración inicial de la página
 st.set_page_config(page_title="Chacutería - Dashboard", page_icon="🧀", layout="wide")
 
@@ -81,40 +80,53 @@ st.markdown("""
 # ==========================================
 # CARGA DE DATOS
 # ==========================================
-@st.cache_data(ttl=300)  # 5 minutos de caché
+@st.cache_data
 def load_data():
-    try:
-        # Lee las credenciales desde los Secrets de Streamlit (más seguro)
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        
-        supabase = create_client(url, key)
+    base_path = 'datos_limpios'
+    if not os.path.exists(f'{base_path}/consolidado_sell_in.csv'):
+        return None, None, None, None, None, None
 
-        sell_in           = pd.DataFrame(supabase.table("sell_in").select("*").execute().data)
-        sell_out          = pd.DataFrame(supabase.table("sell_out").select("*").execute().data)
-        clientes          = pd.DataFrame(supabase.table("clientes").select("*").execute().data)
-        productos         = pd.DataFrame(supabase.table("productos").select("*").execute().data)
-        resumen_mensual   = pd.DataFrame(supabase.table("resumen_mensual").select("*").execute().data)
-        presupuesto       = pd.DataFrame(supabase.table("presupuesto").select("*").execute().data)
-        mercado           = pd.DataFrame(supabase.table("mercado").select("*").execute().data)
-        inventario_inicial = pd.DataFrame(supabase.table("inventario_inicial").select("*").execute().data)
+    sell_in           = pd.read_csv(f'{base_path}/consolidado_sell_in.csv')
+    sell_out          = pd.read_csv(f'{base_path}/consolidado_sell_out.csv')
+    clientes          = pd.read_csv(f'{base_path}/maestro_clientes.csv')
+    productos         = pd.read_csv(f'{base_path}/maestro_productos.csv')
+    resumen_mensual   = pd.read_csv(f'{base_path}/resumen_mensual.csv')
+    presupuesto       = pd.read_csv(f'{base_path}/presupuesto.csv')
+    mercado           = pd.read_csv(f'{base_path}/mercado.csv')
+    inventario_inicial = pd.read_csv(f'{base_path}/inventario_inicial.csv')
 
-        st.success("📡 Datos cargados desde Supabase en tiempo real")
-        
-    except Exception as e:
-        st.warning(f"⚠️ Error al conectar con Supabase: {e}\nUsando datos locales como respaldo...")
-        base_path = 'datos_limpios'
-        sell_in           = pd.read_csv(f'{base_path}/consolidado_sell_in.csv')
-        sell_out          = pd.read_csv(f'{base_path}/consolidado_sell_out.csv')
-        clientes          = pd.read_csv(f'{base_path}/maestro_clientes.csv')
-        productos         = pd.read_csv(f'{base_path}/maestro_productos.csv')
-        resumen_mensual   = pd.read_csv(f'{base_path}/resumen_mensual.csv')
-        presupuesto       = pd.read_csv(f'{base_path}/presupuesto.csv')
-        mercado           = pd.read_csv(f'{base_path}/mercado.csv')
-        inventario_inicial = pd.read_csv(f'{base_path}/inventario_inicial.csv')
+    presupuesto = presupuesto.merge(clientes, on='cliente_id', how='left')
+    presupuesto['Mes_Txt']   = presupuesto['mes'].astype(str).str[:7]
+    presupuesto['categoria'] = presupuesto['categoria'].str.strip().str.upper()
 
-    # ←←← PEGA AQUÍ TODO EL CÓDIGO DE PROCESAMIENTO QUE YA TENÍAS (merge, fechas, fillna, DOH, etc.)
-    # (todo lo que venía después del "return" en tu load_data anterior)
+    sell_in['fecha_factura']  = pd.to_datetime(sell_in['fecha_factura'],  format='%Y-%m-%d', errors='coerce')
+    sell_out['fecha_factura'] = pd.to_datetime(sell_out['fecha_factura'], format='%Y-%m-%d', errors='coerce')
+    sell_in  = sell_in.dropna(subset=['fecha_factura', 'cliente_id'])
+    sell_out = sell_out.dropna(subset=['fecha_factura', 'cliente_id'])
+
+    sell_in['Mes_Txt']  = sell_in['fecha_factura'].dt.strftime('%Y-%m')
+    sell_out['Mes_Txt'] = sell_out['fecha_factura'].dt.strftime('%Y-%m')
+
+    sell_in         = sell_in.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
+    sell_out        = sell_out.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
+    resumen_mensual = resumen_mensual.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
+
+    for df_tmp in [sell_in, sell_out]:
+        for col in ['canal', 'categoria', 'subcategoria', 'regional', 'tipo_producto', 'marca', 'origen']:
+            if col in df_tmp.columns:
+                df_tmp[col] = df_tmp[col].fillna(f'Sin {col.capitalize()}')
+    sell_in['canal'] = sell_in['canal'].fillna('Sin Canal')
+
+    resumen_mensual['DOH'] = pd.to_numeric(resumen_mensual['DOH'], errors='coerce').fillna(0)
+    if 'Mes' in resumen_mensual.columns:
+        resumen_mensual['Mes_Txt'] = resumen_mensual['Mes'].astype(str).str[:7]
+    elif 'mes' in resumen_mensual.columns:
+        resumen_mensual['Mes_Txt'] = resumen_mensual['mes'].astype(str).str[:7]
+    elif 'fecha_factura' in resumen_mensual.columns:
+        resumen_mensual['fecha_factura'] = pd.to_datetime(resumen_mensual['fecha_factura'], errors='coerce')
+        resumen_mensual['Mes_Txt'] = resumen_mensual['fecha_factura'].dt.strftime('%Y-%m')
+    else:
+        resumen_mensual['Mes_Txt'] = 'Sin Fecha'
 
     return sell_in, sell_out, resumen_mensual, presupuesto, mercado, inventario_inicial
 
@@ -1322,29 +1334,3 @@ with tab_ia:
     else:
         st.info("Sin datos de mercado para esta selección de filtros.")
 
-    # Chatbot demo (se mantiene al final)
-    st.markdown("""
-    <div style="background-color:#293241;border-radius:12px;border:1px solid #4a5568;padding:15px;
-                height:300px;display:flex;flex-direction:column;justify-content:space-between;">
-        <div style="color:#a9b8d5;text-align:center;font-size:14px;">Chatbot IA Desactivado (Versión Demo)</div>
-        <div>
-            <div style="background-color:#1a202c;color:#e0e6ed;padding:10px;border-radius:8px;
-                        margin-bottom:10px;width:fit-content;">
-                <span style="font-size:13px;"><b>ChatBot:</b> ¡Hola! Soy el asistente virtual potenciado por
-                <b>Groq</b>. Analizaré toda tu base de datos de Chacutería Foods.<br>
-                ¿Qué te gustaría preguntarme hoy?</span>
-            </div>
-            <div style="background-color:#ff6b35;color:white;padding:10px;border-radius:8px;
-                        margin-bottom:10px;width:fit-content;margin-left:auto;">
-                <span style="font-size:13px;">¿Cuál fue el canal con mayor riesgo de Stock Out el último semestre?</span>
-            </div>
-        </div>
-        <div style="display:flex;gap:10px;">
-            <input type="text" disabled placeholder="Escribe tu consulta aquí..."
-                   style="flex:1;padding:8px;border:1px solid #4a5568;border-radius:6px;
-                          background-color:#1a202c;color:#e0e6ed;">
-            <button disabled style="background-color:#ff6b35;color:white;border:none;
-                                    border-radius:6px;padding:0 15px;opacity:0.5;">Enviar</button>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)

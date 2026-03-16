@@ -4,13 +4,14 @@ Este repositorio contiene la solución a la **Prueba Técnica de Analista de Pla
 
 ## Módulos y Arquitectura
 
-1. **Jupyter Notebook EDA (`eda_chacuteria.ipynb`):** Encargado de cargar, limpiar y consolidar todos los CSVs dispersos en el archivo maestro Parquet (`consolidado.parquet`).
-2. **Script de Ingesta (`upload_to_supabase.py`):** Encargado de enviar automáticamente lote a lote la información del Parquet a una base de datos PostgreSQL hospedada en Supabase, garantizando que el dashboard no tenga que leer CSVs pesados en cada recarga.
-3. **App Streamlit (`Home.py` y `pages/1_Dashboard.py`):** El Dashboard comercial modular con la página web corporativa y el análisis de negocio. 
+1. **Jupyter Notebook EDA (`eda_chacuteria.ipynb`):** Encargado de cargar, limpiar y consolidar todos los CSVs.
+2. **Script de Ingesta (`upload_to_supabase.py`):** Encargado de enviar automáticamente los archivos una base de datos PostgreSQL hospedada en Supabase, garantizando que el dashboard no tenga que leer CSVs pesados en cada recarga.
+3. **App Streamlit (`Home.py` y `pages/1_Dashboard.py`):** El Dashboard comercial modular con la página web corporativa y el análisis de negocio.
 
 ## Cómo Ejecutar Localmente
 
 ### Prerrequisitos
+
 Tener `Python 3.9` o superior y clonar el repositorio.
 
 ```bash
@@ -28,18 +29,5 @@ pip install -r requirements.txt
 ```
 
 ### Ejecutar EDA y Consolidar Datos
+
 Abre Jupyter o ejecuta el notebook usando VS Code para leer los archivos locales (`paquete_candidato_chacuteria_foods/`) y generar el archivo `consolidado.parquet`.
-
-### Levantar el Dashboard de Streamlit
-```bash
-streamlit run Home.py
-```
-Esto abrirá una ventana en tu navegador por defecto `http://localhost:8501`.
-
-## Cómo hacer Deploy (Streamlit Community Cloud)
-1. Sube este repositorio a tu cuenta de GitHub.
-2. Ingresa a [share.streamlit.io](https://share.streamlit.io/).
-3. Vincula tu cuenta de GitHub y dale click a **New app**.
-4. Selecciona este repositorio, la rama `main`, y como Main file path escribe `Home.py`.
-5. *(Opcional)* En Advanced Settings, si conectaste Supabase de verdad, inserta los Secretos (`SUPABASE_URL` y `SUPABASE_KEY`).
-6. Clic en **Deploy**. ¡Listo, en 2-3 minutos estará live!
