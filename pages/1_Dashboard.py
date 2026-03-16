@@ -1151,7 +1151,7 @@ with tab_detallado:
 # ─────────────────────────────────────────
 
 with tab_ia:
-    st.markdown("### 🤖 Modelos Predictivos y Asistente de IA")
+    st.markdown("### 🤖 Modelos Predictivos")
 
 
 
