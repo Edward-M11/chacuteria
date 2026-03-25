@@ -5,38 +5,43 @@ paginate: true
 backgroundColor: #fff
 backgroundImage: url('https://marp.app/assets/hero-background.svg')
 ---
-
 # **Resultados de Negocio y Análisis Comercial**
+
 ### Chacutería Foods S.A.S. - 2025
+
 **Preparado por:** Analista de Planeación e Inteligencia de Negocios
 
 ---
 
 # 1. Hallazgos Clave y KPIs
-- **Sell-in vs Presupuesto:** Comportamiento mensual presenta desviaciones en Q3, logrando un cumplimiento general estimado en $X\%$ sobre el periodo evaluado.
-- **Sell-out (Venta real al consumidor):** Las categorías de "*Quesos Frescos*" y "*Carnes Curadas*" muestran la mayor salida al público, sugiriendo una demanda altamente estacional y dinámica en el canal Discounter.
-- **Inventarios (DOH):** El indicador *Days on Hand* (DOH) promedio global es de ~30 días, lo que representa un portafolio rotando de manera relativamente saludable, pero con variabilidad por cliente.
+
+- **Sell-In vs Presupuesto:** Se nota un gran desempeño general con respecto al presupuesto; la gran mayoría del presupuesto por canal fue cumplido en aproximadamente un 94%.
+- **Sell-Out (Venta real al consumidor):** La categoría de "*Queso Parmesano*" es la que tiene un historial de Sell-Out más cercano al Sell-In, mostrando que el consumidor final tiene un gran interés en esta categoría, llegando incluso a meses donde el Sell-Out supera al Sell-In.
+- **Inventarios (DOH):** El indicador *Days on Hand* (DOH) promedio global es de ~6.7 días. En general se maneja un buen nivel de stock, algo más cercano al sobreabastecimiento que al desabastecimiento. También existe una influencia significativa por parte de los canales con únicamente Sell-In.
 
 ---
 
 # 2. Alertas y Riesgos Identificados
-- 🚨 **Riesgo de Quiebre de Stock (Stockout):** 
-  Identificados múltiples incidentes en las referencias de *Quesos Madurados* en 'Grandes Superficies' durante el segundo semestre de 2025, donde el DOH bajó a $< 10$ días.
-- 📉 **Sobreinventario:** 
-  Ciertas referencias de *Quesos Análogos* acumularon un inventario mayor a 60 días tras sobre-emisiones de sell-in no correspondidas por el sell-out en el Canal Institucional.
-- ⚠️ **Comportamiento Atípico:** Caída drástica del Sell-out en el canal *Mayorista* en noviembre, evidenciando problemas logísticos o pérdida de posicionamiento.
+
+- 🚨 **Riesgo de Quiebre de Stock (Stockout):**
+  El canal de Hard Discount es el que más se acerca a una situación de desabastecimiento.
+- 📉 **Sobreinventario:**
+  Se identificaron casos de productos que son muy poco comprados a lo largo del año, pero en los últimos dos meses su compra aumenta, causando que el stock pueda quedar vacío.
+  Otros casos donde del año anterior queda inventario sobrante que no es vendido sino hasta finales de año.
+- ⚠️ **Comportamiento Atípico:** Caída drástica del Sell-Out en el canal *Mayorista* en noviembre, evidenciando posibles problemas logísticos o pérdida de posicionamiento.
 
 ---
 
 # 3. Análisis frente al Mercado (Nielsen vs Chacutería)
-- **Crecimiento Comparativo:** Mientras el volumen de mercado en "Quesos Frescos" creció un $5.2\%$, Chacutería Foods reportó un incremento de sell-out del $4.1\%$. *Estamos creciendo por debajo de la categoría y perdiendo participación relativa*.
-- **Oportunidad en Valor:** Nuestros productos tienen un índice de precio más agresivo frente a la competencia (según Nielsen share valor vs volumen), lo cual afecta la penetración en zonas C y D.
-- **Competidores:** Reacción agresiva de marcas líderes reportada en el último trimestre, restando participación ($Share\%$) en canal Moderno / Retail.
+
+- **Mejor desempeño:** Chacutería logra un desempeño que rivaliza muy de cerca con los competidores en el canal de Grandes Superficies y en la subcategoría de Queso Parmesano, seguida de Quesos Frescos y Quesos Analógicos.
+- **Oportunidad de mejora:** En general, en el canal de E-commerce la diferencia con los competidores es muy amplia, y es precisamente ahí donde presentamos los menores porcentajes de share.
 
 ---
 
 # 4. Recomendaciones y Siguientes Pasos
-1. **Optimización de Reposición (S&OP):** Sincronizar los pedidos de reposición del canal HORECA (Quesos Análogos) de acuerdo al Sell-out real y no al pronóstico estático, reduciendo el sobreinventario.
-2. **Promociones en Canal Mayorista:** Activar estrategias de trade-marketing empujando inventarios lentos y recuperando la caída atípica detectada en Noviembre-Diciembre.
-3. **Revisión de Pricing (Nielsen):** Reevaluar estrategia de precios en "Quesos Frescos" para frenar la pérdida de Market Share frente a los competidores líderes, según simulador de mercado.
-4. **Adopción del Dashboard:** Institucionalizar la revisión comercial semanal mediante la herramienta generada para monitoreo del ciclo DOH continuo.
+
+1. Este mercado sigue avanzando y creciendo. Se espera que Chacutería siga siendo partícipe activa. Con el pronóstico de los próximos 6 meses es probable que el mercado siga creciendo, pero aún estando detrás de la competencia. Considero que una de las formas de tratar de cambiar esto es hacerse más presencia en las categorías donde somos más fuertes, mantenerlas y que sigan siendo el principal canal de ventas.
+2. Por otro lado, considero que hay que mejorar los puntos débiles o evaluar si son poco rentables y, de ser así, considerar salir de esas categorías para enfocar los esfuerzos en mejorar las demás.
+3. En general considero que se maneja un buen nivel de stock. Los casos específicos donde se podría mejorar están relacionados con la falta de registro del Sell-Out. Por otro lado, los productos de temporada son los que requieren mayor atención, ya que hay casos donde sobra inventario del año anterior que no es vendido a lo largo del año presente; lo ideal sería buscar venderlos rápidamente en los últimos meses del año para evitar cargar con ese stock el siguiente año.
+4. Llevar un registro de lo que se va obteniendo en este año y compararlo con la predicción del modelo. Si se observa una diferencia significativa positiva, significará que los cambios implementados mejoraron el resultado frente a lo que hubiera ocurrido sin ninguna intervención.

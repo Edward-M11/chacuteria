@@ -14,7 +14,7 @@ except RuntimeError:
 # Configuración inicial de la página
 st.set_page_config(page_title="Chacutería - Dashboard", page_icon="🧀", layout="wide")
 
-# CSS personalizado basado en la paleta 'inspira'
+# CSS personalizado basado en una paleta 
 st.markdown("""
     <style>
         :root {
@@ -91,14 +91,18 @@ def load_data():
     if not os.path.exists(f'{base_path}/consolidado_sell_in.csv'):
         return None, None, None, None, None, None
 
-    sell_in           = pd.read_csv(f'{base_path}/consolidado_sell_in.csv')
-    sell_out          = pd.read_csv(f'{base_path}/consolidado_sell_out.csv')
-    clientes          = pd.read_csv(f'{base_path}/maestro_clientes.csv')
-    productos         = pd.read_csv(f'{base_path}/maestro_productos.csv')
+    sell_in           = pd.read_csv(f'{base_path}/consolidado_sell_in.csv').drop_duplicates()
+    sell_out          = pd.read_csv(f'{base_path}/consolidado_sell_out.csv').drop_duplicates()
+    clientes          = pd.read_csv(f'{base_path}/maestro_clientes.csv').drop_duplicates()
+    productos         = pd.read_csv(f'{base_path}/maestro_productos.csv').drop_duplicates()
     resumen_mensual   = pd.read_csv(f'{base_path}/resumen_mensual.csv')
-    presupuesto       = pd.read_csv(f'{base_path}/presupuesto.csv')
-    mercado           = pd.read_csv(f'{base_path}/mercado.csv')
-    inventario_inicial = pd.read_csv(f'{base_path}/inventario_inicial.csv')
+    if len(resumen_mensual.columns) >= 7:
+        resumen_mensual = resumen_mensual.drop_duplicates(subset=resumen_mensual.columns[:7].tolist())
+    else:
+        resumen_mensual = resumen_mensual.drop_duplicates()
+    presupuesto       = pd.read_csv(f'{base_path}/presupuesto.csv').drop_duplicates()
+    mercado           = pd.read_csv(f'{base_path}/mercado.csv').drop_duplicates()
+    inventario_inicial = pd.read_csv(f'{base_path}/inventario_inicial.csv').drop_duplicates()
 
     presupuesto = presupuesto.merge(clientes, on='cliente_id', how='left')
     presupuesto['Mes_Txt']   = presupuesto['mes'].astype(str).str[:7]
@@ -115,8 +119,9 @@ def load_data():
     sell_in         = sell_in.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
     sell_out        = sell_out.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
     resumen_mensual = resumen_mensual.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
+    inventario_inicial = inventario_inicial.merge(clientes, on='cliente_id', how='left').merge(productos, on='sku', how='left')
 
-    for df_tmp in [sell_in, sell_out]:
+    for df_tmp in [sell_in, sell_out, resumen_mensual, inventario_inicial]:
         for col in ['canal', 'categoria', 'subcategoria', 'regional', 'tipo_producto', 'marca', 'origen']:
             if col in df_tmp.columns:
                 df_tmp[col] = df_tmp[col].fillna(f'Sin {col.capitalize()}')
@@ -269,14 +274,7 @@ for col, sel in _activos.items():
         if col in df_out.columns:  df_out  = df_out [df_out [col].isin(sel)]
         if col in df_res.columns:  df_res  = df_res [df_res [col].isin(sel)]
         if col in df_merc.columns: df_merc = df_merc[df_merc[col].isin(sel)]
-        if col == 'cliente' and 'cliente_id' in df_inv.columns:
-            if 'cliente' in sell_in.columns and 'cliente_id' in sell_in.columns:
-                ids = sell_in[sell_in['cliente'].isin(sel)]['cliente_id'].unique()
-                df_inv = df_inv[df_inv['cliente_id'].isin(ids)]
-        if col == 'descripcion_producto' and 'sku' in df_inv.columns:
-            if 'descripcion_producto' in sell_in.columns and 'sku' in sell_in.columns:
-                skus = sell_in[sell_in['descripcion_producto'].isin(sel)]['sku'].unique()
-                df_inv = df_inv[df_inv['sku'].isin(skus)]
+        if col in df_inv.columns:  df_inv  = df_inv [df_inv [col].isin(sel)]
 
 if cliente_sel or sku_sel or tipo_sel or marca_sel or origen_sel:
     st.sidebar.info("🔎 **Análisis Específico Activo.**\nEstos filtros aplican a TODO el dashboard.")
@@ -404,24 +402,21 @@ def calcular_doh(inv_ini, si, so, n_dias_periodo=None):
         )
 
         total_so_u = df_g['u_out'].sum()
+        stock_total = df_g['inv_final'].sum()
 
-        # DOH global ponderado por sell_out
-        mask_so = df_g['u_out'] > 0
-        if mask_so.any():
-            doh_global = (
-                (df_g.loc[mask_so, 'doh_row'] * df_g.loc[mask_so, 'u_out']).sum()
-                / df_g.loc[mask_so, 'u_out'].sum()
-            )
-        elif df_g['inv_final'].sum() > 0:
-            # Hay stock pero ningún sell_out → sobre-stock extremo
+        # DOH global macro (Inventario Total / Venta Promedio Diaria Total)
+        prom_diario = total_so_u / 30.0 if total_so_u > 0 else 0.0
+
+        if prom_diario > 0:
+            doh_global = stock_total / prom_diario
+        elif stock_total > 0:
+            # Hay stock pero cero ventas en la selección
             doh_global = 999.0
         else:
             doh_global = 0.0
 
         # Faltantes: unidades para que el inventario cubra al menos 1 día de venta
-        prom_diario  = total_so_u / 30 if total_so_u > 0 else 0
-        stock_total  = df_g['inv_final'].sum()
-        falt_u       = max(prom_diario * 1 - stock_total, 0)
+        falt_u = max(prom_diario * 1 - stock_total, 0)
 
         kpu = so['kilos_vendidos_calculados'].sum() / total_so_u if total_so_u > 0 and 'kilos_vendidos_calculados' in so.columns else 0
         vpu = so['valor_venta'].sum()               / total_so_u if total_so_u > 0 and 'valor_venta'               in so.columns else 0
@@ -433,7 +428,7 @@ def calcular_doh(inv_ini, si, so, n_dias_periodo=None):
 
 def _estado_abastecimiento(doh):
     if doh < 1:  return "🔴 Falta"
-    if doh <= 7: return "🟢 Buen"
+    if doh <= 7: return "🟢 Bien"
     return "🟡 Sobre"
 
 
@@ -443,7 +438,7 @@ def _estado_abastecimiento(doh):
 tab_general, tab_detallado, tab_ia = st.tabs([
     "📊 Vista General",
     "🔎 Análisis Detallado",
-    "🤖 Análisis de Negocio & IA",
+    "🤖 Análisis de Negocio",
 ])
 
 
@@ -452,22 +447,55 @@ tab_general, tab_detallado, tab_ia = st.tabs([
 # ─────────────────────────────────────────
 with tab_general:
 
-    # KPI inventario: usa rango completo acumulado (estático)
-    inv_data = calcular_inventario_actual(df_inv, _si_rango, _so_rango)
-    stock_u  = inv_data['unidades']
-    stock_v  = inv_data['valor']
-    stock_kg = inv_data['kilos']
+    # ── Inventario KPI ─────────────────────────────────────────────────────
+    # Si hay UN solo mes activo Y existe resumen_mensual con inventario acumulado,
+    # usar el inventario final del mes ANTERIOR al filtrado (arrastre real).
+    # Si hay múltiples meses, usar el acumulado total del rango.
+    _res_full = resumen.copy()  # resumen_mensual completo sin filtro de mes
+    _mes_unico = meses_filtro[0] if len(meses_filtro) == 1 else None
+    _inv_col_u  = next((c for c in ['Unidades_Inventario_Final'] if c in _res_full.columns), None)
+    _inv_col_kg = next((c for c in ['Kilos_Inventario_Final']    if c in _res_full.columns), None)
 
-    # Días calendario del rango seleccionado (primer día del primer mes → último día del último mes)
-    try:
-        _f_ini = pd.Timestamp(meses_filtro[0]  + '-01')
-        _f_fin = pd.Timestamp(meses_filtro[-1] + '-01') + pd.offsets.MonthEnd(0)
-        _n_dias_rango = max((_f_fin - _f_ini).days + 1, 1)
-    except Exception:
-        _n_dias_rango = max(len(meses_filtro) * 30, 1)
+    if _mes_unico and _inv_col_u and 'Mes_Txt' in _res_full.columns:
+        # Tomar el inventario final del mes ANTERIOR al seleccionado
+        _todos_meses = sorted(_res_full['Mes_Txt'].dropna().unique().tolist())
+        _idx_mes = _todos_meses.index(_mes_unico) if _mes_unico in _todos_meses else -1
+        if _idx_mes > 0:
+            _mes_anterior = _todos_meses[_idx_mes - 1]
+            _res_mes_ant  = _res_full[_res_full['Mes_Txt'] == _mes_anterior]
+            # Aplicar filtros del explorador si aplica
+            for _col, _sel in _activos.items():
+                if _sel and _col in _res_mes_ant.columns:
+                    _res_mes_ant = _res_mes_ant[_res_mes_ant[_col].isin(_sel)]
+            stock_u  = _res_mes_ant[_inv_col_u].sum()  if _inv_col_u  in _res_mes_ant.columns else 0
+            stock_kg = _res_mes_ant[_inv_col_kg].sum() if _inv_col_kg in _res_mes_ant.columns else 0
+            stock_v  = stock_u * (_si_rango['valor_venta'].sum() / _si_rango['unidades_vendidas'].sum()) \
+                       if 'valor_venta' in _si_rango.columns and _si_rango['unidades_vendidas'].sum() > 0 else 0
+        else:
+            # Primer mes del historial: usar inventario inicial base
+            inv_data = calcular_inventario_actual(df_inv, _si_rango, _so_rango)
+            stock_u, stock_v, stock_kg = inv_data['unidades'], inv_data['valor'], inv_data['kilos']
+    else:
+        inv_data = calcular_inventario_actual(df_inv, _si_rango, _so_rango)
+        stock_u, stock_v, stock_kg = inv_data['unidades'], inv_data['valor'], inv_data['kilos']
 
-    # DOH: fórmula EDA — (inv_final/sell_out)*30 por sku×cliente, ponderado
-    doh_val, falt_u, falt_v, falt_kg = calcular_doh(df_inv, _si_rango, df_out)
+    # ── DOH KPI ────────────────────────────────────────────────────────────
+    # 1 mes: fórmula directa (inv_final / sell_out_mes) * 30
+    # Varios meses: inv_final / promedio_mensual_sell_out * 30
+    _n_meses = len(meses_filtro)
+    if _n_meses == 1:
+        doh_val, falt_u, falt_v, falt_kg = calcular_doh(df_inv, _si_rango, df_out)
+    else:
+        # Calcular sell-out promedio mensual dividiendo por número de meses
+        _so_prom = df_out.copy()
+        # Crear copia con unidades divididas entre n_meses para simular promedio mensual
+        _so_prom_agg = _so_prom.copy()
+        if 'unidades_vendidas' in _so_prom_agg.columns:
+            _so_prom_agg = _so_prom_agg.copy()
+            _so_prom_agg['unidades_vendidas'] = _so_prom_agg['unidades_vendidas'] / _n_meses
+            if 'kilos_vendidos_calculados' in _so_prom_agg.columns:
+                _so_prom_agg['kilos_vendidos_calculados'] = _so_prom_agg['kilos_vendidos_calculados'] / _n_meses
+        doh_val, falt_u, falt_v, falt_kg = calcular_doh(df_inv, _si_rango, _so_prom_agg)
 
     tot_si_u  = df_in['unidades_vendidas'].sum()          if 'unidades_vendidas'         in df_in.columns  else 0
     tot_si_v  = df_in['valor_venta'].sum()                 if 'valor_venta'               in df_in.columns  else 0
@@ -548,7 +576,8 @@ with tab_general:
     if not tendencia.empty:
         fig1 = px.line(
             tendencia, x=eje_tiempo, y='unidades_vendidas', color='Transacción',
-            markers=True, color_discrete_sequence=['#ff6b35', '#2ec4b6'],
+            markers=True, color_discrete_map={'Sell-In': '#ff6b35', 'Sell-Out': '#2ec4b6'},
+            category_orders={'Transacción': ['Sell-In', 'Sell-Out']},
             custom_data=['kilos', 'Transacción', 'valor'],
         )
         fig1.update_traces(
@@ -1030,11 +1059,8 @@ with tab_detallado:
             # Inventario acumulado día a día con carry-over, igual al EDA
             if 'descripcion_producto' in tabla_dia.columns and 'fecha_factura' in tabla_dia.columns:
                 # Obtener stock inicial por producto (suma sobre todos los clientes del filtro)
-                _prod_col = 'descripcion_producto'
-                _sku_ini  = (df_inv.merge(
-                    sell_in[['sku', 'descripcion_producto']].drop_duplicates(), on='sku', how='left')
-                    .groupby('descripcion_producto')['unidades_inventario'].sum()
-                    if 'sku' in df_inv.columns and 'descripcion_producto' in sell_in.columns
+                _sku_ini  = (df_inv.groupby('descripcion_producto')['unidades_inventario'].sum()
+                    if 'descripcion_producto' in df_inv.columns and 'unidades_inventario' in df_inv.columns
                     else pd.Series(dtype=float))
 
                 tabla_dia = tabla_dia.sort_values(['descripcion_producto'] +
@@ -1153,22 +1179,45 @@ with tab_detallado:
 with tab_ia:
     st.markdown("### 🤖 Modelos Predictivos")
 
+    # Dataframes SIN los filtros del Explorador (solo filtros globales)
+    # para que esta sección NO se vea afectada por Cliente/SKU/Tipo/Marca/Origen
+    _dd_in_ia  = df_in_mes.copy()
+    _dd_out_ia = df_out_mes.copy()
+    _DIMS_GLOBAL = {'canal':'canal_sel', 'regional':'reg_sel', 'categoria':'cat_sel', 'subcategoria':'subc_sel'}
+    for _col, _key in _DIMS_GLOBAL.items():
+        _sel = st.session_state.get(_key, [])
+        if _sel:
+            if _col in _dd_in_ia.columns:  _dd_in_ia  = _dd_in_ia[_dd_in_ia[_col].isin(_sel)]
+            if _col in _dd_out_ia.columns: _dd_out_ia = _dd_out_ia[_dd_out_ia[_col].isin(_sel)]
+
 
 
     # ── 1. KPIs DE SHARE (Top 3 y Bottom 3) — PRIMERO como pediste ─────────────────────
     col_kpi1, col_kpi2 = st.columns(2)
 
-    # Cálculo seguro con los filtros aplicados
+    # Cálculo seguro con los filtros aplicados — por mes para saber en qué mes fue el share
+    _merc_mes = df_merc.copy()
+    if 'mes' in _merc_mes.columns:
+        share_por_mes = _merc_mes.groupby(['mes', 'canal', 'categoria'])['share_compania'].mean().reset_index()
+        share_por_mes['share_%'] = (share_por_mes['share_compania'] * 100).round(2)
+        # Fila con mayor share
+        _top_row    = share_por_mes.nlargest(3, 'share_%')
+        # Fila con menor share (ascendente: el primero es el peor)
+        _bottom_row = share_por_mes.nsmallest(3, 'share_%')
+    else:
+        share_por_mes = pd.DataFrame()
+        _top_row = _bottom_row = pd.DataFrame()
+
+    # También agrupación canal+categoria para los KPI (promedio global para ranking)
     share_group = df_merc.groupby(['canal', 'categoria'])['share_compania'].mean().reset_index()
     share_group = share_group.sort_values('share_compania', ascending=False)
 
-    top3 = share_group.head(3).copy()
-    top3['share_%'] = (top3['share_compania'] * 100).round(2)
+    top3    = _top_row.reset_index(drop=True)    if not _top_row.empty    else share_group.head(3).assign(**{'share_%': lambda d: (d['share_compania']*100).round(2)})
+    bottom3 = _bottom_row.reset_index(drop=True) if not _bottom_row.empty else share_group.tail(3).assign(**{'share_%': lambda d: (d['share_compania']*100).round(2)})
 
-    bottom3 = share_group.tail(3).copy()
-    bottom3['share_%'] = (bottom3['share_compania'] * 100).round(2)
+    def _mes_label(row):
+        return str(row['mes'])[:7] if 'mes' in row.index and pd.notna(row.get('mes')) else ''
 
-    # KPI TOP 3
     with col_kpi1:
         if top3.empty or len(top3) < 1:
             st.markdown("""
@@ -1179,21 +1228,29 @@ with tab_ia:
                 </div>
             </div>""", unsafe_allow_html=True)
         else:
+            def _top_item(i):
+                if len(top3) <= i: return '—', '—', '—', ''
+                r = top3.iloc[i]; mes = _mes_label(r)
+                return r.get('canal','—'), r.get('categoria','—'), r['share_%'], mes
+            _tc, _tcat, _tpct, _tmes = _top_item(0)
+            _2c, _2cat, _2pct, _2mes = _top_item(1)
+            _3c, _3cat, _3pct, _3mes = _top_item(2)
             st.markdown(f"""
             <div class="stat-card" style="border-color:#ff6b35;">
                 <div class="stat-card-title">🔥 TOP 3 CANALES/CATEGORÍAS CON MAYOR SHARE</div>
                 <div style="font-size:22px;font-weight:700;color:#ffffff;margin:12px 0;">
-                    {top3.iloc[0]['canal']}<br>
-                    <span style="font-size:18px;">{top3.iloc[0]['categoria']}</span><br>
-                    <span style="font-size:34px;color:#57cc99;">{top3.iloc[0]['share_%']}%</span>
+                    {_tc}<br>
+                    <span style="font-size:18px;">{_tcat}</span><br>
+                    <span style="font-size:34px;color:#57cc99;">{_tpct}%</span>
+                    <span style="font-size:13px;color:#a9b8d5;"> · {_tmes}</span>
                 </div>
                 <div style="color:#a9b8d5;font-size:14px;">
-                    2°: {top3.iloc[1]['categoria'] if len(top3)>1 else '—'} ({top3.iloc[1]['share_%'] if len(top3)>1 else '—'}%)<br>
-                    3°: {top3.iloc[2]['categoria'] if len(top3)>2 else '—'} ({top3.iloc[2]['share_%'] if len(top3)>2 else '—'}%)
+                    2°: {_2cat} ({_2pct}%){f' · {_2mes}' if _2mes else ''}<br>
+                    3°: {_3cat} ({_3pct}%){f' · {_3mes}' if _3mes else ''}
                 </div>
             </div>""", unsafe_allow_html=True)
 
-    # KPI BOTTOM 3
+    # KPI BOTTOM 3 — ascendente (menor share primero)
     with col_kpi2:
         if bottom3.empty or len(bottom3) < 1:
             st.markdown("""
@@ -1204,17 +1261,25 @@ with tab_ia:
                 </div>
             </div>""", unsafe_allow_html=True)
         else:
+            def _bot_item(i):
+                if len(bottom3) <= i: return '—', '—', '—', ''
+                r = bottom3.iloc[i]; mes = _mes_label(r)
+                return r.get('canal','—'), r.get('categoria','—'), r['share_%'], mes
+            _bc,  _bcat,  _bpct,  _bmes  = _bot_item(0)
+            _b2c, _b2cat, _b2pct, _b2mes = _bot_item(1)
+            _b3c, _b3cat, _b3pct, _b3mes = _bot_item(2)
             st.markdown(f"""
             <div class="stat-card" style="border-color:#ffd166;">
                 <div class="stat-card-title">⚠️ BOTTOM 3 CANALES/CATEGORÍAS CON MENOR SHARE</div>
                 <div style="font-size:22px;font-weight:700;color:#ffffff;margin:12px 0;">
-                    {bottom3.iloc[0]['canal']}<br>
-                    <span style="font-size:18px;">{bottom3.iloc[0]['categoria']}</span><br>
-                    <span style="font-size:34px;color:#ef476f;">{bottom3.iloc[0]['share_%']}%</span>
+                    {_bc}<br>
+                    <span style="font-size:18px;">{_bcat}</span><br>
+                    <span style="font-size:34px;color:#ef476f;">{_bpct}%</span>
+                    <span style="font-size:13px;color:#a9b8d5;"> · {_bmes}</span>
                 </div>
                 <div style="color:#a9b8d5;font-size:14px;">
-                    2°: {bottom3.iloc[1]['categoria'] if len(bottom3)>1 else '—'} ({bottom3.iloc[1]['share_%'] if len(bottom3)>1 else '—'}%)<br>
-                    3°: {bottom3.iloc[2]['categoria'] if len(bottom3)>2 else '—'} ({bottom3.iloc[2]['share_%'] if len(bottom3)>2 else '—'}%)
+                    2°: {_b2cat} ({_b2pct}%){f' · {_b2mes}' if _b2mes else ''}<br>
+                    3°: {_b3cat} ({_b3pct}%){f' · {_b3mes}' if _b3mes else ''}
                 </div>
             </div>""", unsafe_allow_html=True)
 
@@ -1224,29 +1289,33 @@ with tab_ia:
 
     if not df_merc.empty:
         df_share = df_merc.copy()
-        df_share['Otros'] = 1.0 - (df_share['share_compania'] + df_share['share_competidor_1'] + df_share['share_competidor_2'])
-        
+        df_share['Otros'] = (1.0 - (df_share['share_compania'] + df_share['share_competidor_1'] + df_share['share_competidor_2'])).clip(lower=0)
+
         share_mensual = df_share.groupby('mes').agg({
             'share_compania': 'mean',
             'share_competidor_1': 'mean',
             'share_competidor_2': 'mean',
             'Otros': 'mean'
         }).reset_index()
-        
+
+        # Convertir a porcentaje real (0-100)
+        for _sc in ['share_compania', 'share_competidor_1', 'share_competidor_2', 'Otros']:
+            share_mensual[_sc] = (share_mensual[_sc] * 100).round(2)
+
         share_long = share_mensual.melt(
             id_vars=['mes'],
             value_vars=['share_compania', 'share_competidor_1', 'share_competidor_2', 'Otros'],
             var_name='Competidor',
             value_name='Share'
         )
-        
+
         share_long['Competidor'] = share_long['Competidor'].map({
             'share_compania': 'Chacutería Foods',
             'share_competidor_1': 'Competidor 1',
             'share_competidor_2': 'Competidor 2',
             'Otros': 'Otros / Marcas Blancas'
         })
-        
+
         fig_share = px.bar(
             share_long, x='mes', y='Share', color='Competidor', barmode='stack',
             color_discrete_map={
@@ -1256,11 +1325,15 @@ with tab_ia:
                 'Otros / Marcas Blancas': '#a9b8d5'
             }
         )
-        fig_share.update_traces(hovertemplate="<b>%{customdata[0]}</b><br>Mes: %{x}<br>Share: <b>%{y:.1%}</b><extra></extra>",
-                                texttemplate="%{y:.0%}", textposition="inside")
+        # Nombre del competidor + % real en tooltip
+        fig_share.update_traces(
+            hovertemplate="<b>%{fullData.name}</b><br>Mes: %{x}<br>Share: <b>%{y:.2f}%</b><extra></extra>",
+            texttemplate="%{y:.1f}%",
+            textposition="inside"
+        )
         fig_share.update_layout(**_base_layout(
             xaxis_title="Mes", yaxis_title="Participación de Mercado (%)",
-            yaxis=dict(tickformat=".0%", range=[0, 1.05]),
+            yaxis=dict(ticksuffix='%', range=[0, 110]),
             legend=dict(title="Participación", orientation="h", yanchor="bottom", y=1.02),
             margin=dict(l=0, r=0, t=10, b=0), height=380
         ))

@@ -5,8 +5,7 @@ Este repositorio contiene la solución a la **Prueba Técnica de Analista de Pla
 ## Módulos y Arquitectura
 
 1. **Jupyter Notebook EDA (`eda_chacuteria.ipynb`):** Encargado de cargar, limpiar y consolidar todos los CSVs.
-2. **Script de Ingesta (`upload_to_supabase.py`):** Encargado de enviar automáticamente los archivos una base de datos PostgreSQL hospedada en Supabase, garantizando que el dashboard no tenga que leer CSVs pesados en cada recarga.
-3. **App Streamlit (`Home.py` y `pages/1_Dashboard.py`):** El Dashboard comercial modular con la página web corporativa y el análisis de negocio.
+2. **App Streamlit (`Home.py` y `pages/1_Dashboard.py`):** El Dashboard comercial modular con la página web corporativa y el análisis de negocio.
 
 ## Cómo Ejecutar Localmente
 
