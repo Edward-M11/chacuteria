@@ -40,7 +40,6 @@ Implementado como una aplicación de alto rendimiento con **Filtros en Cascada**
 
 ## 🛠️ Arquitectura Técnica de Vanguardia
 
-- **Ingesta en Tiempo Real:** Conexión nativa con **Supabase** para visualización de datos actualizados al instante, con persistencia en caché de 5 minutos.
 - **Motor de Filtrado "Circular":** Los filtros dimensionales se actualizan entre sí para evitar selecciones vacías (Cross-filtering).
 - **Diseño Premium:** Interfaz oscura (Glassmorphism) con micro-animaciones y tooltips estilizados.
 - **Escalabilidad:** Separación de la lógica de negocio (Helpers de DOH e Inventario) de la capa de visualización para facilitar el mantenimiento.

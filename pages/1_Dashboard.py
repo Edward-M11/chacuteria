@@ -1373,7 +1373,7 @@ with tab_ia:
 
         ult_lags = data_reg[['lag_1', 'lag_2', 'lag_3']].iloc[-1:].values.copy()
         pron_market = []
-        fechas_fut = pd.date_range(start=hist['mes'].max() + timedelta(days=30), periods=6, freq='M')
+        fechas_fut = pd.date_range(start=hist['mes'].max() + timedelta(days=30), periods=6, freq='ME')
         for _ in range(6):
             pred = model.predict(ult_lags)[0]
             pron_market.append(max(0, pred))
